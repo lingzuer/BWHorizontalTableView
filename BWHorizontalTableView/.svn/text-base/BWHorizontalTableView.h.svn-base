@@ -1,0 +1,65 @@
+//
+//  MHorizontalTableView.h
+//
+//  Created by bw ye on 12-1-12.
+//  Copyright (c) 2012年 __MyCompanyName__. All rights reserved.
+//  Version 1.0
+//
+
+#import <UIKit/UIKit.h>
+
+@class MHorizontalTableView;
+
+// DataSource of the horizontal table view
+@protocol MHorizontalTableViewDataSource <NSObject>
+@required
+- (NSUInteger)numberOfCellsInHorizontalTableView:(MHorizontalTableView *)aHorizontalTableView;
+
+- (CGFloat)widthForCellInHorizontalTableView:(MHorizontalTableView *)aHorizontalTableView;
+
+- (UIView *)horizontalTableView:(MHorizontalTableView *)aTableView cellAtIndex:(NSInteger)aIndex;
+
+@end
+
+
+// Delegate of the horizontal table view
+@protocol MHorizontalTableViewDelegate
+
+@end
+
+@interface MHorizontalTableView : UIView<UIScrollViewDelegate> {
+@private
+    id<MHorizontalTableViewDataSource>  dataSource_;
+    id<MHorizontalTableViewDelegate>    delegate_;
+
+    UIScrollView    *scrollView_;
+    
+    NSMutableArray  *cells_;
+    NSMutableArray  *reusableCells_;
+    
+    NSUInteger      numberOfCells_;
+    CGFloat         widthForCell_;
+    
+    NSUInteger      numberOfVisibleCells_;
+    
+    NSInteger       indexForFirstVisibleCell_;
+    NSInteger       indexForSelectedCell_;
+    
+    BOOL            dataReloaded_;
+    BOOL            forceLayout_;
+    BOOL            ignoreScroll_;
+}
+
+@property(nonatomic, assign) IBOutlet id<MHorizontalTableViewDataSource>    dataSource;
+@property(nonatomic, assign) IBOutlet id<MHorizontalTableViewDelegate>      delegate;
+@property(nonatomic, readonly)  NSInteger indexForFirstVisibleCell;
+@property(nonatomic, assign)    NSInteger indexForSelectedCell;
+
+- (UIView *)dequeueReusableCell;
+
+- (UIView *)cellForIndex:(NSInteger)aIndex;
+- (NSInteger)indexForCell:(UIView *)aCell;
+
+- (void)selectCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
+
+@end

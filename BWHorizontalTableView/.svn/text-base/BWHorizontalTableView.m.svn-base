@@ -1,0 +1,356 @@
+//
+//  MHorizontalTableView.m
+//  OpenCourse
+//
+//  Created by bw ye on 12-1-12.
+//  Copyright (c) 2012年 __MyCompanyName__. All rights reserved.
+//
+
+#import "MHorizontalTableView.h"
+
+@implementation MHorizontalTableView
+
+#define kReusableCellsCapacity  5
+
+@synthesize dataSource = dataSource_;
+@synthesize delegate = delegate_;
+@synthesize indexForFirstVisibleCell = indexForFirstVisibleCell_;
+@synthesize indexForSelectedCell = indexForSelectedCell_;
+
+#pragma mark - Private Methods
+
+- (void)initialize
+{
+    dataReloaded_ = YES;
+    
+    cells_ = [[NSMutableArray alloc] init];
+    reusableCells_ = [[NSMutableArray alloc] init];
+    
+    indexForFirstVisibleCell_ = 0;
+    indexForSelectedCell_ = 0;
+    
+    scrollView_ = [[UIScrollView alloc] initWithFrame:self.bounds];
+    [scrollView_ setDelegate:self];
+    [scrollView_ setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
+    [scrollView_ setBackgroundColor:[UIColor clearColor]];
+    
+    [self addSubview:scrollView_];
+}
+
+- (void)layoutCellAtIndex:(NSInteger)aIndex
+{
+	NSParameterAssert(aIndex>=0 &&aIndex<[cells_ count]);
+	
+	UIView *cell = [cells_ objectAtIndex:aIndex];
+	if ((NSObject *)cell == [NSNull null])  // no loaded yet
+    {
+        NSLog(@"MHorizontalTableView: Creating a new cell at index: %d", aIndex);
+		
+        cell = [dataSource_ horizontalTableView:self cellAtIndex:aIndex];
+        NSAssert(cell!=nil, @"datasource must not return nil cell");
+        
+        [cells_ replaceObjectAtIndex:aIndex withObject:cell];
+	}
+    
+    // Layout the cell
+	[cell setFrame:CGRectMake(aIndex * widthForCell_, 0.f, widthForCell_, self.bounds.size.height)];
+	if (cell.superview == nil)
+    {
+        [scrollView_ addSubview:cell];
+	}
+}
+
+- (void)queueReuseCell:(UIView *)aCell
+{
+    if (aCell==nil || [reusableCells_ count]>=kReusableCellsCapacity)
+    {
+        return;
+    }
+
+    NSLog(@"MHorizontalTableView: Add cell at index: %d to reusable cells array", [self indexForCell:aCell]);
+    
+    [reusableCells_ addObject:aCell];
+}
+
+- (void)removeCellAtIndex:(NSInteger)aIndex
+{
+	NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
+
+    UIView *cell = [self cellForIndex:aIndex];
+
+    [self queueReuseCell:cell];	
+    
+	if (cell.superview != nil)
+    {
+		[cell removeFromSuperview];
+	}
+
+    [cells_ replaceObjectAtIndex:aIndex withObject:[NSNull null]];
+}
+
+- (void)layoutAllCells
+{
+    // Step 1: Caculate the number of visible cells, now we have the first visible cell index;
+	// If the first visible cell is much wider than the cells near by, there will be problems if only "+2", because
+    // When the first visible cell scrolls to the left, the layoutAllCells will not be called, if the firstVisibleIndex_ not changed.
+    numberOfVisibleCells_ = 0;
+	CGFloat visibleCellsWidth = 0.f;
+    for (NSInteger index=indexForFirstVisibleCell_; index<[cells_ count]; index++)
+    {
+		numberOfVisibleCells_++;
+        visibleCellsWidth = numberOfVisibleCells_ * widthForCell_;
+		if (visibleCellsWidth>=self.bounds.size.width && visibleCellsWidth-widthForCell_>=self.bounds.size.width)
+        {
+			break;
+		}
+	}
+    numberOfVisibleCells_ = MIN(numberOfVisibleCells_+2, [cells_ count]);   // Plus 2 for: One left nearby, one right nearby;
+    
+    // Step 2: Layout the visible cells, remove the invisible cell
+	NSInteger leftMostVisibleCellIndex = MAX(indexForFirstVisibleCell_-1, 0);
+	NSInteger rightMostVisibleCellIndex = MIN(leftMostVisibleCellIndex+numberOfVisibleCells_-1, [cells_ count]-1);
+    NSLog(@"MHorizontalTableView: Loading %d-%d (%d)cells", leftMostVisibleCellIndex, rightMostVisibleCellIndex, numberOfVisibleCells_);
+    
+    for (NSInteger index=0; index<leftMostVisibleCellIndex; index++)
+    {
+        [self removeCellAtIndex:index];
+    }
+    
+    for (NSInteger index=rightMostVisibleCellIndex+1; index<[cells_ count]; index++)
+    {
+        [self removeCellAtIndex:index];
+    }
+    
+	for (NSInteger index=leftMostVisibleCellIndex; index<=rightMostVisibleCellIndex; index++)
+    {
+		[self layoutCellAtIndex:index];
+	}
+}
+
+#pragma mark - Public Methods
+
+- (UIView *)dequeueReusableCell
+{
+    UIView *cell = [[reusableCells_ lastObject] retain];
+    if (cell != nil)
+    {
+        [reusableCells_ removeLastObject];
+    }
+    
+    return [cell autorelease];
+}
+
+- (UIView *)cellForIndex:(NSInteger)aIndex
+{
+    NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
+    
+	UIView *cell = [cells_ objectAtIndex:aIndex];
+	if ((NSObject *)cell == [NSNull null])
+    {
+		cell = nil;
+	}
+    
+	return cell;
+}
+
+- (NSInteger)indexForCell:(UIView *)aCell
+{
+    NSParameterAssert(aCell != nil);
+    
+	NSInteger index;
+	for (index=0; index<[cells_ count]; index++)
+    {
+		if ([cells_ objectAtIndex:index] == aCell)
+        {
+			break;
+		}
+	}
+    
+	if (index == [cells_ count])
+    {
+		index = NSNotFound;
+	}
+	
+	return index;
+}
+
+- (void)selectCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
+{
+	NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
+	
+    indexForSelectedCell_ = aIndex;
+    
+    // If ignoreScroll_ is YES, the scrollViewDidScroll will return immediatly instead of layouting the cells unexpectly.
+    ignoreScroll_ = aAnimated;
+    
+    //1. Caculate the contentOffsetX
+    BOOL enoughSpaceAtLeft  = indexForSelectedCell_*widthForCell_ >= (self.bounds.size.width-widthForCell_)/2;
+    BOOL enoughSpaceAtRight = scrollView_.contentSize.width-indexForSelectedCell_*widthForCell_ > (self.bounds.size.width+widthForCell_)/2;
+    
+    CGFloat contentOffsetX = 0.f;
+    if (!enoughSpaceAtLeft)
+    {
+        contentOffsetX = 0.f;
+    }
+    else
+    {
+        if (enoughSpaceAtRight)
+        {
+            contentOffsetX = indexForSelectedCell_*widthForCell_ - (self.bounds.size.width-widthForCell_)/2;
+        }
+        else
+        {
+            contentOffsetX = scrollView_.contentSize.width - self.bounds.size.width;
+        }
+    }
+    
+    // If the contet offset is not changed, return directly
+    if (contentOffsetX==scrollView_.contentOffset.x && !forceLayout_)
+    {   
+        return;
+    }
+    forceLayout_ = NO;
+    
+    //1. Caculate the indexForFirstVisibleCell_
+    for (NSInteger index=0; index<[cells_ count]; index++)
+    {
+        if ((index+1)*widthForCell_ > contentOffsetX)
+        {
+            indexForFirstVisibleCell_ = index;
+            break;
+        }
+    }
+
+    [scrollView_ setContentOffset:CGPointMake(contentOffsetX, 0.f) animated:aAnimated];
+    
+    // If aAnimated is NO, the scrollViewDidScroll will never be called, so we need to layout the cells here.
+    if (!aAnimated)
+    {
+        [self layoutAllCells];
+    }
+}
+
+
+#pragma mark - UIScrollViewDelegate
+
+- (void)scrollViewDidEndScrollingAnimation:(UIScrollView *)scrollView
+{
+    if (ignoreScroll_)
+    {
+        [self layoutAllCells];
+    }
+    
+    ignoreScroll_ = NO;
+}
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    if (ignoreScroll_)
+    {
+        return;
+    }
+    
+	NSInteger index = 0;
+	for (index=0; index<MIN(indexForFirstVisibleCell_+1, [cells_ count]); index++)
+    {
+		if ((index+1)*widthForCell_ > scrollView.contentOffset.x)
+        {
+			break;
+		}
+	}
+    
+    if (indexForFirstVisibleCell_ == index)
+    {
+        return;
+    }
+    
+	indexForFirstVisibleCell_ = index;
+
+	[self layoutAllCells];    
+}
+
+
+#pragma mark - System Frame work
+
+- (id)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self != nil)
+    {
+        [self initialize];
+    }
+    return self;
+}
+
+- (id)initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if (self != nil)
+    {
+        [self initialize];
+    }
+    
+    return self;
+}
+
+- (void)layoutSubviews
+{
+    if (dataReloaded_)
+    {
+        dataReloaded_ = NO;
+        
+        numberOfCells_ = [self.dataSource numberOfCellsInHorizontalTableView:self];
+        if (numberOfCells_ == 0)
+        {
+            return;
+        }
+        
+        // Clean the memory of old cells
+        for (NSInteger index=0; index<[cells_ count]; index++)
+        {
+            UIView *cell = [cells_ objectAtIndex:index];
+            if ((NSObject *)cell != [NSNull null])
+            {
+                if (cell.superview != nil)
+                {
+                    [cell removeFromSuperview];
+                }
+            }   
+        }
+        [cells_ removeAllObjects];
+        [reusableCells_ removeAllObjects];
+        
+        indexForFirstVisibleCell_ = 0;
+        
+        // User may set the indexForSelectedCell_ after calling reloadData, so keep this value here
+        indexForSelectedCell_ = MIN(indexForSelectedCell_, numberOfCells_-1);
+        
+        // Fill the cells_ with [NSNull null]
+        for (NSInteger index=0; index<numberOfCells_; index++)
+        {
+            [cells_ addObject:[NSNull null]];
+        }
+    }
+    
+    // Refresh the width for cell
+    widthForCell_ = [dataSource_ widthForCellInHorizontalTableView:self];
+    
+    // Refresh the content size of scrollview_
+    [scrollView_ setContentSize:CGSizeMake(numberOfCells_*widthForCell_, self.bounds.size.height)];
+    
+    forceLayout_ = YES;
+    
+    [self selectCellAtIndex:indexForSelectedCell_ animated:NO];
+}
+
+- (void)dealloc
+{
+    [cells_ release];
+    [reusableCells_ release];
+    
+    [scrollView_ removeFromSuperview];
+    [scrollView_ release];
+    scrollView_ = nil;
+    
+    [super dealloc];
+}
+
+@end
