@@ -2,7 +2,6 @@
 //  BWHorizontalTableView.m
 //
 //  Created by bw ye on 12-1-12.
-//  Copyright (c) 2012年 __MyCompanyName__. All rights reserved.
 //
 
 #import "BWHorizontalTableView.h"
@@ -22,7 +21,7 @@
 - (void)initialize
 {
     needsReload_ = YES;
-    
+
     cells_ = [[NSMutableArray alloc] init];
     reusableCells_ = [[NSMutableArray alloc] init];
 
@@ -47,16 +46,12 @@
     [superViewOfScrollView release];
 }
 
-- (CGFloat)offsetWithSelectedIndex:(NSInteger)aIndex
+- (CGFloat)offsetWithSelectedCellIndex:(NSInteger)aIndex
 {   
     BOOL enoughSpaceAtLeft  = indexForSelectedCell_*widthForCell_ >= (self.bounds.size.width-widthForCell_)/2;
     BOOL enoughSpaceAtRight = scrollView_.contentSize.width-indexForSelectedCell_*widthForCell_ > (self.bounds.size.width+widthForCell_)/2;
     CGFloat offset = 0.f;
-    if (!enoughSpaceAtLeft)
-    {
-        offset = 0.f;
-    }
-    else
+    if (enoughSpaceAtLeft)
     {
         if (enoughSpaceAtRight)
         {
@@ -67,8 +62,19 @@
             offset = scrollView_.contentSize.width - self.bounds.size.width;
         }
     }
-    
+
     return offset;
+}
+
+- (NSInteger)firstVisibleCellIndexWithOffset:(CGFloat)aOffset
+{
+	NSInteger index = 0;
+	for (index=0; index<[cells_ count] && (index+1)*widthForCell_<=aOffset; index++)
+    {
+        ;
+	}
+
+    return index;
 }
 
 - (void)queueReuseCell:(UIView *)aCell
@@ -90,13 +96,12 @@
 	NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
     
     UIView *cell = [self cellForIndex:aIndex];
-    [self queueReuseCell:cell];	
-    
+    [self queueReuseCell:cell];
 	if (cell.superview != nil)
     {
-		[cell removeFromSuperview];
-	}
-    
+        [cell removeFromSuperview];
+    }
+
     [cells_ replaceObjectAtIndex:aIndex withObject:[NSNull null]];
 }
 
@@ -112,7 +117,7 @@
 #endif
 		
         cell = [dataSource_ horizontalTableView:self cellAtIndex:aIndex];
-        NSAssert(cell!=nil, @"datasource must not return nil cell");
+        NSAssert(cell!=nil, @"datasource must not return nil");
         
         [cells_ replaceObjectAtIndex:aIndex withObject:cell];
 	}
@@ -164,15 +169,19 @@
 			break;
 		}
 	}
-    numberOfVisibleCells_ = MIN(numberOfVisibleCells_, [cells_ count]);   // Plus 2 for: One left nearby, one right nearby;
+    numberOfVisibleCells_ = MIN(numberOfVisibleCells_, [cells_ count]);
     
     // Step 2: Layout the visible cells, remove the invisible cell
 	NSInteger leftMostVisibleCellIndex = MAX(indexForFirstVisibleCell_, 0);
 	NSInteger rightMostVisibleCellIndex = MIN(leftMostVisibleCellIndex+numberOfVisibleCells_-1, [cells_ count]-1);
     
 #ifdef BWHT_DEBUG_ENABLED
-    //NSLog(@"BWHorizontalTableView: Layouting %d-%d (%d)cells", leftMostVisibleCellIndex, rightMostVisibleCellIndex, numberOfVisibleCells_);
+    NSLog(@"BWHorizontalTableView: Layouting %d-%d (%d)cells", leftMostVisibleCellIndex, rightMostVisibleCellIndex, numberOfVisibleCells_);
 #endif
+	for (NSInteger index=leftMostVisibleCellIndex; index<=rightMostVisibleCellIndex; index++)
+    {
+		[self layoutCellAtIndex:index animated:aAnimated];
+	}
     
     for (NSInteger index=0; index<leftMostVisibleCellIndex; index++)
     {
@@ -183,11 +192,38 @@
     {
         [self removeCellAtIndex:index];
     }
-    
-	for (NSInteger index=leftMostVisibleCellIndex; index<=rightMostVisibleCellIndex; index++)
+}
+
+- (void)setContentOffsetOfScrollView:(CGFloat)aOffset forceLayoutSubviews:(BOOL)aForceLayout animated:(BOOL)aAnimated
+{
+    // If the contet offset is not changed and not forced, return directly
+    if (aOffset==scrollView_.contentOffset.x && !aForceLayout)
     {
-		[self layoutCellAtIndex:index animated:aAnimated];
-	}
+        return;
+    }
+    
+    contentOffset_ = aOffset;
+    
+    // Caculate the indexForFirstVisibleCell_ with aOffset
+    indexForFirstVisibleCell_ = [self firstVisibleCellIndexWithOffset:aOffset];
+    
+    if (aOffset == scrollView_.contentOffset.x) // If offset is not changed, forcelayout
+    {
+        [self layoutAllCellsAnimated:updatingAnimated_];
+        updating_ = NO;
+    }
+    else
+    {
+        ignoreScroll_ = aAnimated;
+        
+        // If animated, set content offset will call the ScrollViewDidScroll and layout the cells
+        [scrollView_ setContentOffset:CGPointMake(aOffset, 0.f) animated:aAnimated];
+        if (!aAnimated)
+        {
+            [self layoutAllCellsAnimated:updatingAnimated_];
+            updating_ = NO;
+        }
+    }
 }
 
 #pragma mark - Public Methods
@@ -199,20 +235,23 @@
     {
         [reusableCells_ removeLastObject];
     }
-    
+
     return [cell autorelease];
 }
 
 - (UIView *)cellForIndex:(NSInteger)aIndex
 {
-    NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
-    
+    if (aIndex<0 || aIndex>=[cells_ count])
+    {
+        return nil;
+    }
+
 	UIView *cell = [cells_ objectAtIndex:aIndex];
 	if ((NSObject *)cell == [NSNull null])
     {
 		cell = nil;
 	}
-    
+
 	return cell;
 }
 
@@ -228,7 +267,7 @@
 			break;
 		}
 	}
-    
+
 	if (index == [cells_ count])
     {
 		index = NSNotFound;
@@ -246,19 +285,16 @@
 
 - (void)reloadCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated
 {
-    NSParameterAssert(aIndex>=0 && aIndex<=[cells_ count]);
-    
-    if (updating_)
+    if (updating_ || aIndex<0 || aIndex>=[cells_ count])
     {
         return;
     }
+
     updating_ = YES;
     updatingAnimated_ = aAnimated;
     
     [cells_ replaceObjectAtIndex:aIndex withObject:[NSNull null]];
-    
-    forceLayout_ = YES;
-    [self setContentOffset:scrollView_.contentOffset.x animated:NO];
+    [self setContentOffsetOfScrollView:scrollView_.contentOffset.x forceLayoutSubviews:YES animated:NO];
 }
 
 - (void)insertCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated
@@ -275,7 +311,7 @@
     // Reset cells
     [cells_ insertObject:[NSNull null] atIndex:aIndex];
     numberOfCells_++;
-    
+
     // Reset the content size of scroll view
     [scrollView_ setContentSize:CGSizeMake(numberOfCells_*widthForCell_, scrollView_.bounds.size.height)];
     
@@ -285,15 +321,14 @@
         updating_ = NO;
         return;
     }
-        
-    forceLayout_ = YES;
-    [self setContentOffset:scrollView_.contentOffset.x animated:NO];
+
+    [self setContentOffsetOfScrollView:scrollView_.contentOffset.x forceLayoutSubviews:YES animated:NO];
 }
 
 - (void)deleteCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated
 {
 	NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
-    
+
     if (updating_)
     {
         return;
@@ -325,9 +360,8 @@
         contentOffsetX = scrollView_.contentSize.width - scrollView_.bounds.size.width;
     }
     contentOffsetX = MAX(0, contentOffsetX);
-    
-    forceLayout_ = YES;
-    [self setContentOffset:contentOffsetX animated:YES];
+
+    [self setContentOffsetOfScrollView:contentOffsetX forceLayoutSubviews:YES animated:YES];
 }
 
 - (void)selectCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
@@ -339,11 +373,17 @@
         return;
     }
     
-	NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
-	
-    indexForSelectedCell_ = aIndex;
+    if (aIndex<0 || aIndex>=[cells_ count])
+    {
+        indexForSelectedCell_ = 0;
+    }
+    
+    [self setContentOffsetOfScrollView:[self offsetWithSelectedCellIndex:aIndex] forceLayoutSubviews:NO animated:aAnimated];
+}
 
-    [self setContentOffset:[self offsetWithSelectedIndex:aIndex] animated:aAnimated];
+- (void)scrollToCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated
+{
+    [self setContentOffsetOfScrollView:aIndex*widthForCell_ forceLayoutSubviews:NO animated:aAnimated];
 }
 
 - (void)setContentOffset:(CGFloat)aContentOffset
@@ -354,51 +394,7 @@
     }
     else
     {
-        [self setContentOffset:aContentOffset animated:NO];
-    }
-}
-
-- (void)setContentOffset:(CGFloat)aOffset animated:(BOOL)aAnimated;
-{
-    // If the contet offset is not changed and not forced, return directly
-    if (aOffset==scrollView_.contentOffset.x && !forceLayout_)
-    {
-        return;
-    }
-    
-    contentOffset_ = aOffset;
-    
-    aOffset = MAX(0, MIN(scrollView_.contentSize.width-self.bounds.size.width, aOffset));
-    
-    //1. Caculate the indexForFirstVisibleCell_ with aOffset
-    for (NSInteger index=0; index<[cells_ count]; index++)
-    {
-        if ((index+1)*widthForCell_ > aOffset)
-        {
-            indexForFirstVisibleCell_ = index;
-            break;
-        }
-    }
-    
-    if (aOffset == scrollView_.contentOffset.x) // If offset is not changed
-    {
-        [self layoutAllCellsAnimated:updatingAnimated_];
-        
-        forceLayout_ = NO;
-        updating_ = NO;
-    }
-    else
-    {   
-        ignoreScroll_ = aAnimated;
-        
-        [scrollView_ setContentOffset:CGPointMake(aOffset, 0.f) animated:aAnimated];
-        
-        if (!aAnimated)
-        {
-            [self layoutAllCellsAnimated:updatingAnimated_];
-            
-            updating_ = NO;
-        }
+        [self setContentOffsetOfScrollView:aContentOffset forceLayoutSubviews:NO animated:NO];
     }
 }
 
@@ -429,7 +425,6 @@
         }
 
     }
-    
     ignoreScroll_ = NO;
 }
 
@@ -442,25 +437,15 @@
 
     contentOffset_ = scrollView_.contentOffset.x;
     
-	NSInteger index = 0;
-	for (index=0; index<MIN(indexForFirstVisibleCell_+1, [cells_ count]); index++)
-    {
-		if ((index+1)*widthForCell_ > scrollView.contentOffset.x)
-        {
-			break;
-		}
-	}
-    
+	NSInteger index = [self firstVisibleCellIndexWithOffset:scrollView_.contentOffset.x];
     if (indexForFirstVisibleCell_ == index)
     {
         return;
     }
-    
 	indexForFirstVisibleCell_ = index;
 
 	[self layoutAllCellsAnimated:NO];    
 }
-
 
 #pragma mark - System Frame work
 
@@ -483,12 +468,20 @@
     return self;
 }
 
+// http://blog.logichigh.com/2011/03/16/when-does-layoutsubviews-get-called/
+// LayoutSubviews will be called when:
+//  1 addSubview causes layoutSubviews to be called on the view being added, the view it’s being added to (target view), 
+//    and all the subviews of the target view
+//  2 setFrame intelligently calls layoutSubviews on the view having it’s frame set only if the size parameter of the frame is different
+//* 3 scrolling a UIScrollView causes layoutSubviews to be called on the scrollView, and it’s superview
+//  4 rotating a device only calls layoutSubview on the parent view (the responding viewControllers primary view)
+//  5 removeFromSuperview – layoutSubviews is called on superview only (not show in table)
 - (void)layoutSubviews
 {
     if (needsReload_)
     {
         needsReload_ = NO;
-
+        
         // Reset the numberOfCells_
         numberOfCells_ = [self.dataSource numberOfCellsInHorizontalTableView:self];
         if (numberOfCells_ == 0)
@@ -500,37 +493,35 @@
         for (NSInteger index=0; index<[cells_ count]; index++)
         {
             UIView *cell = [cells_ objectAtIndex:index];
-            if ((NSObject *)cell != [NSNull null])
+            if (cell.superview != nil)
             {
-                if (cell.superview != nil)
-                {
-                    [cell removeFromSuperview];
-                }
+                [cell removeFromSuperview];
             }   
         }
         [cells_ removeAllObjects];
         [reusableCells_ removeAllObjects];
         
-        indexForFirstVisibleCell_ = 0;
-
-        // User may set the indexForSelectedCell_ after calling reloadData, so keep this value here
-        indexForSelectedCell_ = MIN(indexForSelectedCell_, numberOfCells_-1);
-
         // Fill the cells_ with [NSNull null]
         for (NSInteger index=0; index<numberOfCells_; index++)
         {
             [cells_ addObject:[NSNull null]];
         }
+        
+        // It will be calculate later, we also reset it here
+        indexForFirstVisibleCell_ = 0;
+
+        // User may set the indexForSelectedCell_ after calling reloadData, so keep this value
+        indexForSelectedCell_ = MIN(indexForSelectedCell_, numberOfCells_-1);
     }
-    
-    // Refresh the width for cell
+
+    // Reset the width for cell
     widthForCell_ = [dataSource_ widthForCellInHorizontalTableView:self];
     
-    // Refresh the content size of scrollview_
+    // Reset the content size of scrollview_
     [scrollView_ setContentSize:CGSizeMake(numberOfCells_*widthForCell_, self.bounds.size.height)];
     
-    forceLayout_ = YES; // Layout all the cells even if the offset not changed;
-    [self setContentOffset:[self offsetWithSelectedIndex:indexForSelectedCell_] animated:YES];   
+    // Reset the content offset of scrollView_
+    [self setContentOffsetOfScrollView:[self offsetWithSelectedCellIndex:indexForSelectedCell_] forceLayoutSubviews:YES animated:YES];
 }
 
 - (void)dealloc
