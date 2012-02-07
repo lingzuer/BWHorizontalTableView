@@ -10,8 +10,7 @@
 
 @interface HorizontalTableViewCell : UIView
 
-//@property(nonatomic, retain) IBOutlet UIButton *imageButton;
-@property(nonatomic, retain) IBOutlet UIImageView *imageView;
+@property(nonatomic, retain) IBOutlet UIButton *imageButton;
 @property(nonatomic, retain) IBOutlet UILabel *label;
 
 @end

@@ -14,6 +14,14 @@
 @synthesize imageView = imageView_;
 @synthesize horizontalTableView = horizontalTableView_;
 
+- (void)imageButtonPressed:(UIButton *)aButton
+{
+    NSInteger index = aButton.tag - 1;
+    
+    NSLog(@"%d", index);
+    [horizontalTableView_ selectCellAtIndex:index animated:YES];
+}
+
 - (NSUInteger)numberOfCellsInHorizontalTableView:(BWHorizontalTableView *)aHorizontalTableView
 {
     return [images_ count];
@@ -29,9 +37,12 @@
     HorizontalTableViewCell *cell = (HorizontalTableViewCell *)[aTableView dequeueReusableCell];
     if (cell == nil) {
         cell = [[[NSBundle mainBundle] loadNibNamed:@"HorizontalTableViewCell" owner:nil options:nil] lastObject];
+        
+        [cell.imageButton addTarget:self action:@selector(imageButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     }
     
-    [cell.imageView setImage:[images_ objectAtIndex:aIndex]];
+    [cell.imageButton setImage:[images_ objectAtIndex:aIndex] forState:UIControlStateNormal];
+    [cell.imageButton setTag:aIndex+1];
     [cell.label setText:[NSString stringWithFormat:@"%d", aIndex]];
     
     return cell;

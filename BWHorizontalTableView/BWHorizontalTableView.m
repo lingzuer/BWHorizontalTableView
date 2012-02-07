@@ -41,21 +41,20 @@
     [superViewOfScrollView setBackgroundColor:[UIColor clearColor]];
     [superViewOfScrollView addSubview:scrollView_];
 
-    [self setBackgroundColor:[UIColor clearColor]];
     [self addSubview:superViewOfScrollView];
     [superViewOfScrollView release];
 }
 
 - (CGFloat)offsetWithSelectedCellIndex:(NSInteger)aIndex
 {   
-    BOOL enoughSpaceAtLeft  = indexForSelectedCell_*widthForCell_ >= (self.bounds.size.width-widthForCell_)/2;
-    BOOL enoughSpaceAtRight = scrollView_.contentSize.width-indexForSelectedCell_*widthForCell_ > (self.bounds.size.width+widthForCell_)/2;
+    BOOL enoughSpaceAtLeft  = aIndex*widthForCell_ >= (self.bounds.size.width-widthForCell_)/2;
+    BOOL enoughSpaceAtRight = scrollView_.contentSize.width-aIndex*widthForCell_ > (self.bounds.size.width+widthForCell_)/2;
     CGFloat offset = 0.f;
     if (enoughSpaceAtLeft)
     {
         if (enoughSpaceAtRight)
         {
-            offset = indexForSelectedCell_*widthForCell_ - (self.bounds.size.width-widthForCell_)/2;
+            offset = aIndex*widthForCell_ - (self.bounds.size.width-widthForCell_)/2;
         }
         else
         {
@@ -187,7 +186,7 @@
     {
         [self removeCellAtIndex:index];
     }
-    
+
     for (NSInteger index=rightMostVisibleCellIndex+1; index<[cells_ count]; index++)
     {
         [self removeCellAtIndex:index];
@@ -366,10 +365,10 @@
 
 - (void)selectCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 {
+    indexForSelectedCell_ = aIndex;
+    
     if ([cells_ count] == 0)    // Just set the indexForSelectedCell_
-    {
-        indexForSelectedCell_ = aIndex;
-        
+    {        
         return;
     }
     
