@@ -2,7 +2,7 @@
 //  BWHorizontalTableView.h
 //  
 //  Created by yebw on 12-1-12.
-//  Version 1.0
+//  Version 1.1
 //  
 
 #import <UIKit/UIKit.h>
@@ -61,17 +61,17 @@
 
 @property(nonatomic, assign) IBOutlet id<BWHorizontalTableViewDataSource>    dataSource;
 @property(nonatomic, assign) IBOutlet id<BWHorizontalTableViewDelegate>      delegate;
-@property(nonatomic, assign) CGFloat        contentOffset; 
-@property(nonatomic, readonly) NSInteger    indexForFirstVisibleCell;
-@property(nonatomic, readonly) NSInteger    indexForSelectedCell;
+@property(nonatomic, assign)    CGFloat     contentOffset; 
+@property(nonatomic, readonly)  NSInteger   indexForFirstVisibleCell;
+@property(nonatomic, readonly)  NSInteger   indexForSelectedCell;
 
-// Querying for available reusable cells;
+// Querying for available reusable cell;
 - (UIView *)dequeueReusableCell;
 
-// The cell at index sepcified, return nil if aIndex is illeage OR THE CELL RELEVANT IS NOT VISIBLE;
+// Querying for the cell at index sepcified, return nil if aIndex is illegal, OR THE CELL IS NOT VISIBLE;
 - (UIView *)cellForIndex:(NSInteger)aIndex;
 
-// return the index of cell sepcified, return NSNotFound if aCell is not a cell of current tableview, OR IT'S NOT VISIBLE;
+// Returns an index of cell sepcified, return NSNotFound if aCell is not a cell of current tableview, OR IT'S NOT VISIBLE;
 - (NSInteger)indexForCell:(UIView *)aCell;
 
 
@@ -79,20 +79,21 @@
 - (void)reloadData;
 
 
-// All the updating operation is only support of one animation type: fading;
+// All the updating operation is only support of fading animation now;
 
 - (void)reloadCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 - (void)insertCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;   
 - (void)deleteCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 
 
-// If a cell is selected, the cell will be layouted to the center of the tableview
+// Select the cell specified. If a cell is selected, the cell will be layouted to the center of the tableview.
 - (void)selectCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 
-// Scroll to the cell sepecified
+// Scroll to the cell sepecified.
 - (void)scrollToCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 
-// Note: called willRotate in  - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
+// Note: The rotate event will make the UIScrollView scroll unexpectly, call willRotate and didRotate to avoid it.
+// call willRotate in - (void)willRotateToInterfaceOrientation:(UIInterfaceOrientation)toInterfaceOrientation duration:(NSTimeInterval)duration
 //  and didRotate in - (void)didRotateFromInterfaceOrientation:(UIInterfaceOrientation)fromInterfaceOrientation if the screen is rotating
 - (void)willRotate;
 - (void)didRotate;

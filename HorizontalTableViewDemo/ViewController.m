@@ -17,8 +17,6 @@
 - (void)imageButtonPressed:(UIButton *)aButton
 {
     NSInteger index = aButton.tag - 1;
-    
-    NSLog(@"%d", index);
     [horizontalTableView_ selectCellAtIndex:index animated:YES];
 }
 

@@ -115,7 +115,7 @@
 - (void)layoutCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated
 {
 	NSParameterAssert(aIndex>=0 &&aIndex<[cells_ count]);
-    
+
 	UIView *cell = [cells_ objectAtIndex:aIndex];
 	if ((NSObject *)cell == [NSNull null])  // no loaded yet
     {
@@ -125,25 +125,22 @@
 		
         cell = [dataSource_ horizontalTableView:self cellAtIndex:aIndex];
         NSAssert(cell!=nil, @"datasource must not return nil");
-        
+
         [cells_ replaceObjectAtIndex:aIndex withObject:cell];
 	}
 
     if (cell.superview == nil)
     {
         [scrollView_ addSubview:cell];
-        [cell setAlpha:0.f];
+
         [cell setFrame:CGRectMake(aIndex * widthForCell_, 0.f, widthForCell_, self.bounds.size.height)];
-        
         if (aAnimated)
         {
+            [cell setAlpha:0.f];
+            
             [UIView animateWithDuration:0.3f animations:^{
                 [cell setAlpha:1.f];
             }];
-        }
-        else
-        {
-            [cell setAlpha:1.f];
         }
     }
     else
@@ -152,7 +149,7 @@
         {
             [UIView animateWithDuration:0.3f animations:^{
                 [cell setFrame:CGRectMake(aIndex * widthForCell_, 0.f, widthForCell_, self.bounds.size.height)];
-            }];   
+            }];
         }
         else
         {
@@ -213,7 +210,6 @@
     
     // Caculate the indexForFirstVisibleCell_ with aOffset
     indexForFirstVisibleCell_ = [self firstVisibleCellIndexWithOffset:aOffset];
-    
     if (aOffset == scrollView_.contentOffset.x) // If offset is not changed, forcelayout
     {
         [self layoutAllCellsAnimated:updatingAnimated_];
@@ -443,14 +439,13 @@
     }
 
     contentOffset_ = scrollView_.contentOffset.x;
-    
-	NSInteger index = [self firstVisibleCellIndexWithOffset:scrollView_.contentOffset.x];
+	NSInteger index = [self firstVisibleCellIndexWithOffset:contentOffset_];
     if (indexForFirstVisibleCell_ == index)
     {
         return;
     }
+    
 	indexForFirstVisibleCell_ = index;
-
 	[self layoutAllCellsAnimated:NO];    
 }
 
