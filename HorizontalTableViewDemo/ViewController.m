@@ -17,6 +17,8 @@
 - (void)imageButtonPressed:(UIButton *)aButton
 {
     NSInteger index = aButton.tag - 1;
+    
+    [imageView_ setImage:[images_ objectAtIndex:index]];
     [horizontalTableView_ selectCellAtIndex:index animated:YES];
 }
 
@@ -37,10 +39,6 @@
         cell = [[[NSBundle mainBundle] loadNibNamed:@"HorizontalTableViewCell" owner:nil options:nil] lastObject];
         
         [cell.imageButton addTarget:self action:@selector(imageButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
-    }
-    else
-    {
-        NSLog(@"reuse");
     }
     
     [cell.imageButton setImage:[images_ objectAtIndex:aIndex] forState:UIControlStateNormal];
@@ -88,7 +86,7 @@
     
     [self.imageView setImage:[UIImage imageNamed:@"1.jpg"]];
     
-    [horizontalTableView_ selectCellAtIndex:5 animated:NO];
+    [horizontalTableView_ selectCellAtIndex:0 animated:NO];
 }
 
 - (void)viewDidUnload

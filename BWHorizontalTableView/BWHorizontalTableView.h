@@ -30,7 +30,8 @@
 
 
 // Declaration of BWHorizontalTableView
-@interface BWHorizontalTableView : UIView<UIScrollViewDelegate> {
+@interface BWHorizontalTableView : UIView<UIScrollViewDelegate>
+{
 @private
     id<BWHorizontalTableViewDataSource>  dataSource_;
     id<BWHorizontalTableViewDelegate>    delegate_;
@@ -81,15 +82,20 @@
 
 // All the updating operation is only support of fading animation now;
 
+// Reload the cell specified with an option to animate the insertion.
 - (void)reloadCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
-- (void)insertCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;   
+
+// Insert the cell secified with an option to animate the insertion. User should insert the new relevant data befor it is called.
+- (void)insertCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated; 
+
+// Delete the cell secified with an option to animate the insertion. User should delete the relevant data befor it is called.
 - (void)deleteCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 
 
-// Select the cell specified. If a cell is selected, the cell will be layouted to the center of the tableview.
+// Select the cell specified with an option to animate the insertion. If a cell is selected, the cell will be layouted to the center of the tableview.
 - (void)selectCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 
-// Scroll to the cell sepecified.
+// Scroll to the cell sepecified with an option to animate the insertion
 - (void)scrollToCellAtIndex:(NSInteger)aIndex animated:(BOOL)aAnimated;
 
 // Note: The rotate event will make the UIScrollView scroll unexpectly, call willRotate and didRotate to avoid it.
