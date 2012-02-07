@@ -7,7 +7,7 @@
 
 #import <UIKit/UIKit.h>
 
-//#define BWHT_DEBUG_ENABLED
+#define BWHT_DEBUG_ENABLED
 
 // Forward declaration
 @class BWHorizontalTableView;
@@ -49,6 +49,9 @@
     CGFloat         contentOffset_;
     NSInteger       indexForFirstVisibleCell_;
     NSInteger       indexForSelectedCell_;
+    
+    NSUInteger      indexForFirstLoadedCell_;
+    NSUInteger      indexForLastLoadedCell_;
     
     BOOL            needsReload_;               // Needs reload the data of cells;
     

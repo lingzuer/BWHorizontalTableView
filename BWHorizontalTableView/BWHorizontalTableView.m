@@ -173,26 +173,25 @@
 			break;
 		}
 	}
-    numberOfVisibleCells_ = MIN(numberOfVisibleCells_, [cells_ count]);
     
-    // Step 2: Layout the visible cells, remove the invisible cell
-	NSInteger leftMostVisibleCellIndex = MAX(indexForFirstVisibleCell_, 0);
-	NSInteger rightMostVisibleCellIndex = MIN(leftMostVisibleCellIndex+numberOfVisibleCells_-1, [cells_ count]-1);
-    
+    // Step 2: Layout the visible cells, remove the invisible cell (Layout 2 more cells more for efficiency)
+    indexForFirstLoadedCell_ = MAX(indexForFirstVisibleCell_-1, 0);
+    indexForLastLoadedCell_ = MIN(indexForFirstVisibleCell_+numberOfVisibleCells_/*-1+1*/, [cells_ count]-1);
+
 #ifdef BWHT_DEBUG_ENABLED
-    NSLog(@"BWHorizontalTableView: Layouting %d-%d (%d)cells", leftMostVisibleCellIndex, rightMostVisibleCellIndex, numberOfVisibleCells_);
+    NSLog(@"BWHorizontalTableView: Layouting %d-%d (%d)cells", indexForFirstLoadedCell_, indexForLastLoadedCell_, numberOfVisibleCells_);
 #endif
-	for (NSInteger index=leftMostVisibleCellIndex; index<=rightMostVisibleCellIndex; index++)
+	for (NSInteger index=indexForFirstLoadedCell_; index<=indexForLastLoadedCell_; index++)
     {
 		[self layoutCellAtIndex:index animated:aAnimated];
 	}
     
-    for (NSInteger index=0; index<leftMostVisibleCellIndex; index++)
+    for (NSInteger index=0; index<indexForFirstLoadedCell_; index++)
     {
         [self removeCellAtIndex:index];
     }
 
-    for (NSInteger index=rightMostVisibleCellIndex+1; index<[cells_ count]; index++)
+    for (NSInteger index=indexForLastLoadedCell_+1; index<[cells_ count]; index++)
     {
         [self removeCellAtIndex:index];
     }
@@ -319,7 +318,7 @@
     [scrollView_ setContentSize:CGSizeMake(numberOfCells_*widthForCell_, scrollView_.bounds.size.height)];
     
     // If the cell is not visible, don't update the scrollview
-    if (aIndex<indexForFirstVisibleCell_ || aIndex>indexForFirstVisibleCell_+numberOfVisibleCells_-1)
+    if (aIndex<indexForFirstLoadedCell_ || aIndex>indexForLastLoadedCell_)
     {
         updating_ = NO;
         return;
@@ -350,7 +349,7 @@
     [scrollView_ setContentSize:CGSizeMake(numberOfCells_*widthForCell_, scrollView_.bounds.size.height)];
     
     // If the cell is not visible, don't update the scrollview
-    if (aIndex<indexForFirstVisibleCell_ || aIndex>indexForFirstVisibleCell_+numberOfVisibleCells_-1)
+    if (aIndex<indexForFirstLoadedCell_ || aIndex>indexForLastLoadedCell_)
     {
         updating_ = NO;
         return;

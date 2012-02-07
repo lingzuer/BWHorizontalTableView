@@ -368,11 +368,13 @@
 		E9C194B31455B01E00D0CD00 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer: Bingwei Ye (59C5G8PXZ2)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "HorizontalTableViewDemo/HorizontalTableViewDemo-Prefix.pch";
 				INFOPLIST_FILE = "HorizontalTableViewDemo/HorizontalTableViewDemo-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "F2DB4D95-9010-4CF2-9BB2-9509C1525613";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -380,11 +382,13 @@
 		E9C194B41455B01E00D0CD00 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				CODE_SIGN_IDENTITY = "iPhone Developer: Bingwei Ye (59C5G8PXZ2)";
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "HorizontalTableViewDemo/HorizontalTableViewDemo-Prefix.pch";
 				INFOPLIST_FILE = "HorizontalTableViewDemo/HorizontalTableViewDemo-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 4.0;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "F2DB4D95-9010-4CF2-9BB2-9509C1525613";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
