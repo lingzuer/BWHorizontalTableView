@@ -40,6 +40,10 @@
         
         [cell.imageButton addTarget:self action:@selector(imageButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
     }
+    else
+    {
+        NSLog(@"reuse");
+    }
     
     [cell.imageButton setImage:[images_ objectAtIndex:aIndex] forState:UIControlStateNormal];
     [cell.imageButton setTag:aIndex+1];

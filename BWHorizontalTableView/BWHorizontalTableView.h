@@ -7,7 +7,7 @@
 
 #import <UIKit/UIKit.h>
 
-#define BWHT_DEBUG_ENABLED
+//#define BWHT_DEBUG_ENABLED
 
 // Forward declaration
 @class BWHorizontalTableView;

@@ -76,11 +76,11 @@
     return index;
 }
 
-- (void)queueReuseCell:(UIView *)aCell
+- (BOOL)queueReusableCell:(UIView *)aCell
 {
     if (aCell==nil || [reusableCells_ count]>=kReusableCellsCapacity)
     {
-        return;
+        return NO;
     }
     
 #ifdef BWHT_DEBUG_ENABLED
@@ -88,6 +88,8 @@
 #endif
     
     [reusableCells_ addObject:aCell];
+    
+    return YES;
 }
 
 - (void)removeCellAtIndex:(NSInteger)aIndex
@@ -95,8 +97,14 @@
 	NSParameterAssert(aIndex>=0 && aIndex<[cells_ count]);
     
     UIView *cell = [self cellForIndex:aIndex];
-    [self queueReuseCell:cell];
-	if (cell.superview != nil)
+    if (cell == nil)
+    {
+        return;
+    }
+    
+    [self queueReusableCell:cell];
+    
+    if (cell.superview != nil)
     {
         [cell removeFromSuperview];
     }
