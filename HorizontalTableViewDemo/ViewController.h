@@ -16,11 +16,15 @@
     BWHorizontalTableView *horizontalTableView_;
     
     NSMutableArray *images_;
+    
+    BOOL    selectedCellIndex_;
 }
 
 @property(nonatomic, retain) IBOutlet UIImageView *imageView;
 @property(nonatomic, retain) IBOutlet BWHorizontalTableView *horizontalTableView;
 
 //- (IBAction)testButtonPressed;
+
+- (void)cellDidSelect:(UIView *)aCell;
 
 @end

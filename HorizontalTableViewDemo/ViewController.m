@@ -14,9 +14,21 @@
 @synthesize imageView = imageView_;
 @synthesize horizontalTableView = horizontalTableView_;
 
-- (void)imageButtonPressed:(UIButton *)aButton
+- (void)cellDidSelect:(UIView *)aCell
 {
-    NSInteger index = aButton.tag - 1;
+    NSInteger index = [horizontalTableView_ indexForCell:aCell];
+    if (index == selectedCellIndex_)
+    {
+        return;
+    }
+    
+    HorizontalTableViewCell *cell = (HorizontalTableViewCell *)[horizontalTableView_ cellForIndex:selectedCellIndex_];
+    [cell.selectedView setAlpha:0.f];
+    
+    HorizontalTableViewCell *currentCell = (HorizontalTableViewCell *)aCell;
+    [currentCell.selectedView setAlpha:1.f];
+    
+    selectedCellIndex_ = index;
     
     [imageView_ setImage:[images_ objectAtIndex:index]];
     [horizontalTableView_ selectCellAtIndex:index animated:YES];
@@ -38,11 +50,22 @@
     if (cell == nil) {
         cell = [[[NSBundle mainBundle] loadNibNamed:@"HorizontalTableViewCell" owner:nil options:nil] lastObject];
         
-        [cell.imageButton addTarget:self action:@selector(imageButtonPressed:) forControlEvents:UIControlEventTouchUpInside];
+        [cell setDelegate:self];
+        
+        [cell.imageButton.imageView setContentMode:UIViewContentModeScaleAspectFill];
+        [cell.imageButton.imageView setClipsToBounds:YES];
+    }
+    
+    if (aIndex == selectedCellIndex_)
+    {
+        [cell.selectedView setAlpha:1.f];
+    }
+    else
+    {
+        [cell.selectedView setAlpha:0.f];
     }
     
     [cell.imageButton setImage:[images_ objectAtIndex:aIndex] forState:UIControlStateNormal];
-    [cell.imageButton setTag:aIndex+1];
     [cell.label setText:[NSString stringWithFormat:@"%d", aIndex]];
     
     return cell;
@@ -79,14 +102,12 @@
     {
         images_ = [[NSMutableArray alloc] init];
     }
-    for (NSInteger index=0; index<10; index++)
+    for (NSInteger index=0; index<20; index++)
     {
         [images_ addObject:[UIImage imageNamed:[NSString stringWithFormat:@"%d.jpg", index+1]]];
     }
     
-    [self.imageView setImage:[UIImage imageNamed:@"1.jpg"]];
-    
-    [horizontalTableView_ selectCellAtIndex:0 animated:NO];
+    [self.imageView setImage:[images_ objectAtIndex:selectedCellIndex_]];
 }
 
 - (void)viewDidUnload

@@ -10,12 +10,38 @@
 
 @implementation HorizontalTableViewCell
 
-@synthesize imageButton;
-@synthesize label;
+@synthesize delegate = delegate_;
+@synthesize selectedView = selectedView_;
+@synthesize imageButton = imageButton_;
+@synthesize label = label_;
+@synthesize maskView = maskView_;
 
-- (void)dealloc {
+- (IBAction)imageButtonTouchDown
+{
+    [maskView_ setHidden:NO];
+}
+
+- (IBAction)imageButtonMoveOutside
+{
+    [maskView_ setHidden:YES];
+}
+
+- (IBAction)imageButtonPressed
+{
+    [maskView_ setHidden:YES];
+    
+    if ([delegate_ respondsToSelector:@selector(cellDidSelect:)])
+    {
+        [delegate_ performSelector:@selector(cellDidSelect:) withObject:self];
+    }
+}
+
+- (void)dealloc
+{
+    self.selectedView = nil;
     self.imageButton = nil;
     self.label = nil;
+    self.maskView = nil;
     
     [super dealloc];
 }
