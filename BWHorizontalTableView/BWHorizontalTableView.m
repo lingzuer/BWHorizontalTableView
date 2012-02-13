@@ -40,7 +40,7 @@
     [superViewOfScrollView setAutoresizingMask:UIViewAutoresizingFlexibleWidth|UIViewAutoresizingFlexibleHeight];
     [superViewOfScrollView setBackgroundColor:[UIColor clearColor]];
     [superViewOfScrollView addSubview:scrollView_];
-
+    
     [self addSubview:superViewOfScrollView];
     [superViewOfScrollView release];
 }
@@ -531,7 +531,8 @@
 {
     [cells_ release];
     [reusableCells_ release];
-    
+
+    [scrollView_ setDelegate:nil];
     [scrollView_ removeFromSuperview];
     [scrollView_ release];
     
